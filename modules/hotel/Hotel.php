@@ -32,10 +32,7 @@ class Hotel {
      */
     public function getHotelById($hotelId) {
         try {
-            $stmt = $this->conn->prepare("
-                SELECT * FROM bk_hotels 
-                WHERE hotel_id = ? AND status = 'active'
-            ");
+            $stmt = $this->conn->prepare("\n                SELECT * FROM bk_hotels \n                WHERE hotel_id = ? AND status = \'active\'\n            ");
             $stmt->execute([$hotelId]);
             return $stmt->fetch();
         } catch (PDOException $e) {
@@ -91,12 +88,7 @@ class Hotel {
                 error_log("Error checking/adding columns: " . $e->getMessage());
             }
             
-            $stmt = $this->conn->prepare("
-                SELECT rt.*, h.hotel_name, h.hotel_id
-                FROM bk_room_types rt
-                LEFT JOIN bk_hotels h ON rt.hotel_id = h.hotel_id
-                WHERE rt.room_type_id = ?
-            ");
+            $stmt = $this->conn->prepare("\n                SELECT rt.*, h.hotel_name, h.hotel_id\n                FROM bk_room_types rt\n                LEFT JOIN bk_hotels h ON rt.hotel_id = h.hotel_id\n                WHERE rt.room_type_id = ?\n            ");
 
 
             $stmt->execute([$roomTypeId]);
@@ -112,14 +104,7 @@ class Hotel {
      */
     public function getHotelReviews($hotelId, $limit = 10, $offset = 0) {
         try {
-            $stmt = $this->conn->prepare("
-                SELECT r.*, u.first_name, u.last_name, u.email
-                FROM bk_reviews r
-                LEFT JOIN bk_users u ON r.user_id = u.user_id
-                WHERE r.hotel_id = ? AND r.status = 'approved'
-                ORDER BY r.created_at DESC
-                LIMIT ? OFFSET ?
-            ");
+            $stmt = $this->conn->prepare("\n                SELECT r.*, u.first_name, u.last_name, u.email\n                FROM bk_reviews r\n                LEFT JOIN bk_users u ON r.user_id = u.user_id\n                WHERE r.hotel_id = ? AND r.status = \'approved\'\n                ORDER BY r.created_at DESC\n                LIMIT ? OFFSET ?\n            ");
             $stmt->execute([$hotelId, $limit, $offset]);
             return $stmt->fetchAll();
         } catch (PDOException $e) {
@@ -133,11 +118,7 @@ class Hotel {
      */
     public function getAverageRating($hotelId) {
         try {
-            $stmt = $this->conn->prepare("
-                SELECT AVG(rating) as avg_rating, COUNT(*) as total_reviews
-                FROM bk_reviews
-                WHERE hotel_id = ? AND status = 'approved'
-            ");
+            $stmt = $this->conn->prepare("\n                SELECT AVG(rating) as avg_rating, COUNT(*) as total_reviews\n                FROM bk_reviews\n                WHERE hotel_id = ? AND status = \'approved\'\n            ");
             $stmt->execute([$hotelId]);
             return $stmt->fetch();
         } catch (PDOException $e) {
@@ -151,11 +132,7 @@ class Hotel {
      */
     public function getRoomImages($roomTypeId) {
         try {
-            $stmt = $this->conn->prepare("
-                SELECT * FROM bk_room_images 
-                WHERE room_type_id = ?
-                ORDER BY is_featured DESC, display_order ASC
-            ");
+            $stmt = $this->conn->prepare("\n                SELECT * FROM bk_room_images \n                WHERE room_type_id = ?\n                ORDER BY is_featured DESC, display_order ASC\n            ");
             $stmt->execute([$roomTypeId]);
             return $stmt->fetchAll();
         } catch (PDOException $e) {
@@ -169,22 +146,13 @@ class Hotel {
      */
     public function getFeaturedImage($roomTypeId) {
         try {
-            $stmt = $this->conn->prepare("
-                SELECT * FROM bk_room_images 
-                WHERE room_type_id = ? AND is_featured = 1
-                LIMIT 1
-            ");
+            $stmt = $this->conn->prepare("\n                SELECT * FROM bk_room_images \n                WHERE room_type_id = ? AND is_featured = 1\n                LIMIT 1\n            ");
             $stmt->execute([$roomTypeId]);
             $result = $stmt->fetch();
             
             // ถ้าไม่มีรูป featured ให้เอารูปแรก
             if (!$result) {
-                $stmt = $this->conn->prepare("
-                    SELECT * FROM bk_room_images 
-                    WHERE room_type_id = ?
-                    ORDER BY display_order ASC
-                    LIMIT 1
-                ");
+                $stmt = $this->conn->prepare("\n                    SELECT * FROM bk_room_images \n                    WHERE room_type_id = ?\n                    ORDER BY display_order ASC\n                    LIMIT 1\n                ");
                 $stmt->execute([$roomTypeId]);
                 $result = $stmt->fetch();
             }
@@ -201,24 +169,7 @@ class Hotel {
      */
     public function searchAvailableRooms($hotelId, $checkIn, $checkOut, $guests = 2) {
         try {
-            $stmt = $this->conn->prepare("
-                SELECT rt.*, 
-                       rt.total_rooms - COALESCE(SUM(b.rooms_booked), 0) as available_rooms
-                FROM bk_room_types rt
-                LEFT JOIN bk_bookings b ON rt.room_type_id = b.room_type_id
-                    AND b.status NOT IN ('cancelled', 'rejected')
-                    AND (
-                        (b.check_in_date <= ? AND b.check_out_date > ?)
-                        OR (b.check_in_date < ? AND b.check_out_date >= ?)
-                        OR (b.check_in_date >= ? AND b.check_out_date <= ?)
-                    )
-                WHERE rt.hotel_id = ?
-                    AND rt.status = 'available'
-                    AND rt.max_occupancy >= ?
-                GROUP BY rt.room_type_id
-                HAVING available_rooms > 0
-                ORDER BY rt.display_order ASC, rt.base_price ASC
-            ");
+            $stmt = $this->conn->prepare("\n                SELECT rt.*, \n                       rt.total_rooms - COALESCE(SUM(b.rooms_booked), 0) as available_rooms\n                FROM bk_room_types rt\n                LEFT JOIN bk_bookings b ON rt.room_type_id = b.room_type_id\n                    AND b.status NOT IN (\'cancelled\', \'rejected\')\n                    AND (\n                        (b.check_in_date <= ? AND b.check_out_date > ?)\n                        OR (b.check_in_date < ? AND b.check_out_date >= ?)\n                        OR (b.check_in_date >= ? AND b.check_out_date <= ?)\n                    )\n                WHERE rt.hotel_id = ?\n                    AND rt.status = \'available\'\n                    AND rt.max_occupancy >= ?\n                GROUP BY rt.room_type_id\n                HAVING available_rooms > 0\n                ORDER BY rt.display_order ASC, rt.base_price ASC\n            ");
             
             $stmt->execute([
                 $checkIn, $checkIn,
@@ -241,10 +192,7 @@ class Hotel {
     public function checkRoomAvailability($roomTypeId, $checkIn, $checkOut, $roomsNeeded = 1) {
         try {
             // ดึงจำนวนห้องทั้งหมด
-            $stmt = $this->conn->prepare("
-                SELECT total_rooms FROM bk_room_types 
-                WHERE room_type_id = ?
-            ");
+            $stmt = $this->conn->prepare("\n                SELECT total_rooms FROM bk_room_types \n                WHERE room_type_id = ?\n            ");
             $stmt->execute([$roomTypeId]);
             $roomType = $stmt->fetch();
             
@@ -255,17 +203,7 @@ class Hotel {
             $totalRooms = intval($roomType['total_rooms']);
             
             // นับห้องที่ถูกจองในช่วงเวลานี้
-            $stmt = $this->conn->prepare("
-                SELECT SUM(rooms_booked) as booked
-                FROM bk_bookings
-                WHERE room_type_id = ?
-                    AND status NOT IN ('cancelled', 'rejected')
-                    AND (
-                        (check_in_date <= ? AND check_out_date > ?)
-                        OR (check_in_date < ? AND check_out_date >= ?)
-                        OR (check_in_date >= ? AND check_out_date <= ?)
-                    )
-            ");
+            $stmt = $this->conn->prepare("\n                SELECT SUM(rooms_booked) as booked\n                FROM bk_bookings\n                WHERE room_type_id = ?\n                    AND status NOT IN (\'cancelled\', \'rejected\')\n                    AND (\n                        (check_in_date <= ? AND check_out_date > ?)\n                        OR (check_in_date < ? AND check_out_date >= ?)\n                        OR (check_in_date >= ? AND check_out_date <= ?)\n                    )\n            ");
             
             $stmt->execute([
                 $roomTypeId,
@@ -300,9 +238,7 @@ class Hotel {
      */
     public function getHotelAmenities($hotelId) {
         try {
-            $stmt = $this->conn->prepare("
-                SELECT amenities FROM bk_hotels WHERE hotel_id = ?
-            ");
+            $stmt = $this->conn->prepare("\n                SELECT amenities FROM bk_hotels WHERE hotel_id = ?\n            ");
             $stmt->execute([$hotelId]);
             $result = $stmt->fetch();
             
@@ -322,9 +258,7 @@ class Hotel {
      */
     public function getRoomAmenities($roomTypeId) {
         try {
-            $stmt = $this->conn->prepare("
-                SELECT amenities FROM bk_room_types WHERE room_type_id = ?
-            ");
+            $stmt = $this->conn->prepare("\n                SELECT amenities FROM bk_room_types WHERE room_type_id = ?\n            ");
             $stmt->execute([$roomTypeId]);
             $result = $stmt->fetch();
             
@@ -338,6 +272,33 @@ class Hotel {
             return [];
         }
     }
+
+    /**
+     * ดึงข้อมูล amenities พร้อมคำแปลจาก Master List
+     */
+    public function getTranslatedAmenities($roomTypeId) {
+        $amenityNames = $this->getRoomAmenities($roomTypeId);
+        
+        if (empty($amenityNames) || !is_array($amenityNames)) {
+            return [];
+        }
+        
+        try {
+            // สร้าง placeholder สำหรับ IN clause
+            $placeholders = implode(',', array_fill(0, count($amenityNames), '?'));
+            
+            $sql = "SELECT * FROM bk_amenities WHERE amenity_name IN ($placeholders) ORDER BY display_order ASC, amenity_name ASC";
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute($amenityNames);
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (PDOException $e) {
+            error_log("Error getting translated amenities: " . $e->getMessage());
+            return []; // คืนค่าเป็น array ว่างถ้าเกิด error
+        }
+    }
     
     /**
      * ค้นหาโรงแรมตามเงื่อนไข
@@ -348,24 +309,7 @@ class Hotel {
             $offset = ($page - 1) * $itemsPerPage;
             
             // Build base query
-            $sql = "
-                SELECT DISTINCT h.*,
-                    (SELECT MIN(rt.base_price) 
-                     FROM bk_room_types rt 
-                     WHERE rt.hotel_id = h.hotel_id 
-                     AND rt.status = 'available'
-                     AND rt.max_occupancy >= ?) as min_price,
-                    (SELECT AVG(r.rating) 
-                     FROM bk_reviews r 
-                     WHERE r.hotel_id = h.hotel_id 
-                     AND r.status = 'approved') as avg_rating,
-                    (SELECT COUNT(*) 
-                     FROM bk_reviews r 
-                     WHERE r.hotel_id = h.hotel_id 
-                     AND r.status = 'approved') as review_count
-                FROM bk_hotels h
-                WHERE h.status = 'active'
-            ";
+            $sql = "\n                SELECT DISTINCT h.*,\n                    (SELECT MIN(rt.base_price) \n                     FROM bk_room_types rt \n                     WHERE rt.hotel_id = h.hotel_id \n                     AND rt.status = \'available\'\n                     AND rt.max_occupancy >= ?) as min_price,\n                    (SELECT AVG(r.rating) \n                     FROM bk_reviews r \n                     WHERE r.hotel_id = h.hotel_id \n                     AND r.status = \'approved\') as avg_rating,\n                    (SELECT COUNT(*) \n                     FROM bk_reviews r \n                     WHERE r.hotel_id = h.hotel_id \n                     AND r.status = \'approved\') as review_count\n                FROM bk_hotels h\n                WHERE h.status = \'active\'\n            ";
             
             $params = [$guests];
             
@@ -377,23 +321,7 @@ class Hotel {
             
             // Filter by availability if dates are provided
             if (!empty($checkIn) && !empty($checkOut)) {
-                $sql .= " AND EXISTS (
-                    SELECT 1 FROM bk_room_types rt
-                    WHERE rt.hotel_id = h.hotel_id
-                    AND rt.status = 'available'
-                    AND rt.max_occupancy >= ?
-                    AND rt.total_rooms > COALESCE((
-                        SELECT SUM(b.rooms_booked)
-                        FROM bk_bookings b
-                        WHERE b.room_type_id = rt.room_type_id
-                        AND b.status NOT IN ('cancelled', 'rejected')
-                        AND (
-                            (b.check_in_date <= ? AND b.check_out_date > ?)
-                            OR (b.check_in_date < ? AND b.check_out_date >= ?)
-                            OR (b.check_in_date >= ? AND b.check_out_date <= ?)
-                        )
-                    ), 0)
-                )";
+                $sql .= " AND EXISTS (\n                    SELECT 1 FROM bk_room_types rt\n                    WHERE rt.hotel_id = h.hotel_id\n                    AND rt.status = \'available\'\n                    AND rt.max_occupancy >= ?\n                    AND rt.total_rooms > COALESCE((\n                        SELECT SUM(b.rooms_booked)\n                        FROM bk_bookings b\n                        WHERE b.room_type_id = rt.room_type_id\n                        AND b.status NOT IN (\'cancelled\', \'rejected\')\n                        AND (\n                            (b.check_in_date <= ? AND b.check_out_date > ?)\n                            OR (b.check_in_date < ? AND b.check_out_date >= ?)\n                            OR (b.check_in_date >= ? AND b.check_out_date <= ?)\n                        )\n                    ), 0)\n                )";
                 $params[] = $guests;
                 $params[] = $checkIn;
                 $params[] = $checkIn;
@@ -423,11 +351,7 @@ class Hotel {
      */
     public function getTotalHotels($city = '', $checkIn = '', $checkOut = '', $guests = 2) {
         try {
-            $sql = "
-                SELECT COUNT(DISTINCT h.hotel_id) as total
-                FROM bk_hotels h
-                WHERE h.status = 'active'
-            ";
+            $sql = "\n                SELECT COUNT(DISTINCT h.hotel_id) as total\n                FROM bk_hotels h\n                WHERE h.status = \'active\'\n            ";
             
             $params = [];
             
@@ -439,23 +363,7 @@ class Hotel {
             
             // Filter by availability if dates are provided
             if (!empty($checkIn) && !empty($checkOut)) {
-                $sql .= " AND EXISTS (
-                    SELECT 1 FROM bk_room_types rt
-                    WHERE rt.hotel_id = h.hotel_id
-                    AND rt.status = 'available'
-                    AND rt.max_occupancy >= ?
-                    AND rt.total_rooms > COALESCE((
-                        SELECT SUM(b.rooms_booked)
-                        FROM bk_bookings b
-                        WHERE b.room_type_id = rt.room_type_id
-                        AND b.status NOT IN ('cancelled', 'rejected')
-                        AND (
-                            (b.check_in_date <= ? AND b.check_out_date > ?)
-                            OR (b.check_in_date < ? AND b.check_out_date >= ?)
-                            OR (b.check_in_date >= ? AND b.check_out_date <= ?)
-                        )
-                    ), 0)
-                )";
+                $sql .= " AND EXISTS (\n                    SELECT 1 FROM bk_room_types rt\n                    WHERE rt.hotel_id = h.hotel_id\n                    AND rt.status = \'available\'\n                    AND rt.max_occupancy >= ?\n                    AND rt.total_rooms > COALESCE((\n                        SELECT SUM(b.rooms_booked)\n                        FROM bk_bookings b\n                        WHERE b.room_type_id = rt.room_type_id\n                        AND b.status NOT IN (\'cancelled\', \'rejected\')\n                        AND (\n                            (b.check_in_date <= ? AND b.check_out_date > ?)\n                            OR (b.check_in_date < ? AND b.check_out_date >= ?)\n                            OR (b.check_in_date >= ? AND b.check_out_date <= ?)\n                        )\n                    ), 0)\n                )";
                 $params[] = $guests;
                 $params[] = $checkIn;
                 $params[] = $checkIn;
